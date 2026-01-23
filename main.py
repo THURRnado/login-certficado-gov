@@ -1,0 +1,14 @@
+from scripts.startBrowser import start_browser
+from scripts import comandosSelenium
+
+driver = start_browser()
+
+# Abrir uma página
+comandosSelenium.ir_para_url(driver, "https://det.sit.trabalho.gov.br/login?r=%2Fservicos")
+
+comandosSelenium.clicar_por_xpath(driver, '//*[@id="botao"]')
+
+comandosSelenium.clicar_por_xpath(driver, '//*[@id="login-certificate"]')
+
+input("Pressione Enter para fechar...")
+comandosSelenium.fechar_browser(driver)
