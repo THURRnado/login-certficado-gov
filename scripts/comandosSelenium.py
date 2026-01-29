@@ -1,6 +1,29 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
+import time
+
+
+
+def captcha_presente(driver):
+    try:
+        driver.find_element(By.XPATH, "//iframe[contains(@src,'captcha')]")
+        return True
+    except NoSuchElementException:
+        return False
+
+
+def aguardar_resolucao_captcha(driver, intervalo=2):
+    print("\n🛑 CAPTCHA detectado!")
+    print("👉 Resolva manualmente no navegador.")
+    print("⏳ Aguardando...\n")
+
+    while captcha_presente(driver):
+        time.sleep(intervalo)
+
+    print("✅ CAPTCHA resolvido.\n")
+
 
 
 def ir_para_url(driver, url, timeout=10):
