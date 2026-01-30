@@ -21,7 +21,6 @@ print(f"🔐 Senha carregada")
 driver = start_browser(
     headless=False,
     profile_path=PROFILE_PATH,
-    certificado_pfx=CERTIFICADO_PATH
 )
 
 comandosSelenium.ir_para_url(driver, URL_LOGIN)
