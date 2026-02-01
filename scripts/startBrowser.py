@@ -14,21 +14,22 @@ def start_browser(headless=False, profile_path=None):
     options.add_argument("--ignore-certificate-errors")
     options.add_argument("--allow-insecure-localhost")
     
-    # Política de seleção automática de certificado (formato JSON correto)
-    cert_policy = json.dumps({
-        "pattern": "https://*.gov.br",
-        "filter": {
-            "ISSUER": {
-                "CN": "AC SyngularID Multipla"
+    # Auto-select certificate: substitua pattern e ISSUER/CN pelos valores reais
+    auto_select = [
+        {
+            "pattern": "https://*.acesso.gov.br/*",
+            "filter": {
+                "ISSUER": {
+                    "CN": "AC SyngularID Multipla"
+                }
             }
         }
-    })
+    ]
+    options.add_argument(f'--auto-select-certificate-for-urls={json.dumps(auto_select)}')
     
-    # Adiciona a política - IMPORTANTE: use lista JSON
-    prefs = {
-        "profile.managed_auto_select_certificate_for_urls": [cert_policy]
-    }
-    options.add_experimental_option("prefs", prefs)
+    # Recomendações anti-detect
+    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    options.add_experimental_option('useAutomationExtension', False)
     
     if profile_path:
         options.add_argument(f"--user-data-dir={profile_path}")

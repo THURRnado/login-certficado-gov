@@ -32,8 +32,6 @@ if url_certificado:
     print(f"🔗 URL capturada: {url_certificado}")
     comandosSelenium.ir_para_url_cert(driver, url_certificado)
 
-    driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ENTER)
-
 sleep(5)
 
 driver.quit()
