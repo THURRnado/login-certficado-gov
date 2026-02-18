@@ -1,8 +1,8 @@
 import os
 import subprocess
 
-CERTIFICADO_PATH = os.path.abspath("../certificadoDig/3S SOLUCOES CONTABEIS S_S LTDA_10587724000137.pfx")
-SENHA_PATH = os.path.abspath("../certificadoDig/senha.txt")
+CERTIFICADO_PATH = os.path.abspath("../auth/3S SOLUCOES CONTABEIS S_S LTDA_10587724000137.pfx")
+SENHA_PATH = os.path.abspath("../auth/senha.txt")
 
 # Lê a senha
 with open(SENHA_PATH, 'r') as f:

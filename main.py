@@ -1,37 +1,53 @@
-import os
-from scripts.startBrowser import start_browser
-from scripts import comandosSelenium
-from time import sleep
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
+from playwright.sync_api import sync_playwright
 
-URL_LOGIN = "https://det.sit.trabalho.gov.br/login?r=%2Fservicos"
-PROFILE_PATH = os.path.abspath("./chrome_profile")
-CERTIFICADO_PATH = os.path.abspath("./certificadoDig/certificado.pfx")
-SENHA_PATH = os.path.abspath("./certificadoDig/senha.txt")
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=False)
 
-# Lê a senha do certificado
-with open(SENHA_PATH, 'r') as f:
-    senha_certificado = f.read().strip()
+    context = browser.new_context(
+        client_certificates=[
+            {
+                "origin": "https://sso.acesso.gov.br",
+                "pfx_path": "auth/3S SOLUCOES CONTABEIS S_S LTDA_10587724000137.pfx",
+                "passphrase": "senha_aqui",
+            }
+        ],
+        permissions=["geolocation"],
+        geolocation={"latitude": -23.5505, "longitude": -46.6333},
+    )
 
-print(f"📁 Certificado: {CERTIFICADO_PATH}")
-print(f"🔐 Senha carregada")
+    page = context.new_page()
 
-# Abre VISÍVEL para o CAPTCHA
-driver = start_browser(
-    headless=False,
-    profile_path=PROFILE_PATH,
-)
+    page.on("request", lambda request: print(">>", request.url))
 
-comandosSelenium.ir_para_url(driver, URL_LOGIN)
+    # Página de login
+    page.goto(
+        "https://det.sit.trabalho.gov.br/login?r=%2Fservicos",
+        wait_until="networkidle"
+    )
 
-comandosSelenium.clicar_xpath(driver, '//*[@id="botao"]')
+    page.locator('#botao').click()
 
-url_certificado = comandosSelenium.obter_url_botao_xpath(driver, '//*[@id="login-certificate"]')
-if url_certificado:
-    print(f"🔗 URL capturada: {url_certificado}")
-    comandosSelenium.ir_para_url_cert(driver, url_certificado)
+    login_cert = page.locator('#login-certificate')
+    login_cert.wait_for(state="visible")
 
-sleep(5)
+    with page.expect_navigation():
+        page.evaluate("""
+            const form = document.querySelector('#login-certificate').form;
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'operation';
+            input.value = 'login-certificate';
+            form.appendChild(input);
+            form.submit();
+        """)
 
-driver.quit()
+    '''print("Login realizado:", page.url)
+
+    page.goto(
+        "https://det.sit.trabalho.gov.br/servicos",
+        wait_until="networkidle"
+    )
+
+    print("Página serviços:", page.url)'''
+
+    page.wait_for_timeout(8000)
