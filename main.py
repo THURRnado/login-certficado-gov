@@ -1,75 +1,50 @@
 from playwright.sync_api import sync_playwright
-from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
-import os
 
-PFX_PATH = "auth/3S SOLUCOES CONTABEIS S_S LTDA_10587724000137.pfx"
-PASSPHRASE = "senha_aq"
-CERT_PEM = "auth/cert.pem"
-KEY_PEM  = "auth/key.pem"
+def main():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        context = browser.new_context(ignore_https_errors=True)
+        page = context.new_page()
 
-def converter_pfx_para_pem():
-    with open(PFX_PATH, "rb") as f:
-        pfx_data = f.read()
-    private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
-        pfx_data, PASSPHRASE.encode()
-    )
-    with open(CERT_PEM, "wb") as f:
-        f.write(certificate.public_bytes(Encoding.PEM))
-        if additional_certs:
-            for cert in additional_certs:
-                f.write(cert.public_bytes(Encoding.PEM))
-    with open(KEY_PEM, "wb") as f:
-        f.write(private_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()))
+        url = "https://det.sit.trabalho.gov.br/login?r=%2Fservicos"
+        print(f"Acessando a URL: {url}")
+        page.goto(url)
 
-if not os.path.exists(CERT_PEM) or not os.path.exists(KEY_PEM):
-    converter_pfx_para_pem()
+        print("Aguardando e clicando no botão 'Entrar com gov.br'...")
+        page.locator("#botao").click()
 
-ORIGENS = [
-    "https://sso.acesso.gov.br",
-    "https://certificado.sso.acesso.gov.br",
-    "https://acesso.gov.br",
-    "https://staging.acesso.gov.br",
-    "https://det.sit.trabalho.gov.br",
-]
+        page.wait_for_load_state("networkidle")
+        
+        # Clicando no botão do certificado digital pelo ID
+        print("Clicando em 'Seu certificado digital'...")
+        page.locator("#login-certificate").click()
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=False)
+        print("=" * 50)
+        print("ATENÇÃO: HORA DO TRABALHO MANUAL")
+        print("1. Resolva o CAPTCHA que apareceu na tela.")
+        print("2. Selecione o seu Certificado Digital (a janela do Windows/Linux vai abrir).")
+        print("3. Digite o PIN (se pedir).")
+        print("O script está em pausa e aguardando você chegar na página final...")
+        print("=" * 50)
 
-    context = browser.new_context(
-        client_certificates=[
-            {"origin": origem, "certPath": CERT_PEM, "keyPath": KEY_PEM}
-            for origem in ORIGENS
-        ],
-        permissions=["geolocation"],
-        geolocation={"latitude": -23.5505, "longitude": -46.6333},
-    )
+        # O script vai congelar aqui até a URL mudar para o painel de serviços.
+        # Coloquei timeout=0 para ele esperar o tempo que for necessário.
+        page.wait_for_url("**/servicos**", timeout=0) 
+        
+        print("Login detectado com sucesso!")
+        print(f"URL atual: {page.url}")
 
-    page = context.new_page()
+        # Salvar os cookies mágicos (Sessão)
+        print("Salvando cookies da sessão para uso futuro...")
+        cookies = context.cookies()
+        import json
+        import os
+        os.makedirs("auth", exist_ok=True)
+        with open("auth/session_cookies.json", "w") as f:
+            json.dump(cookies, f)
 
-    page.goto(
-        "https://det.sit.trabalho.gov.br/login?r=%2Fservicos",
-        wait_until="networkidle"
-    )
+        input("Tudo certo! Pressione Enter para fechar...")
+        browser.close()
 
-    print("=" * 50)
-    print("Faça o login manualmente no browser.")
-    print("Clique em certificado digital e complete o captcha.")
-    print("O script continuará automaticamente após o login.")
-    print("=" * 50)
-
-    # Aguarda até chegar na página de serviços (login completo)
-    page.wait_for_url("**/servicos**", timeout=120000)
-    print("Login concluído! URL:", page.url)
-
-    # Salva cookies da sessão autenticada para reutilizar
-    cookies = context.cookies()
-    import json
-    with open("auth/session_cookies.json", "w") as f:
-        json.dump(cookies, f)
-    print("Sessão salva em auth/session_cookies.json")
-
-    # A partir daqui o script continua automatizado
-    page.goto("https://det.sit.trabalho.gov.br/servicos", wait_until="networkidle")
-    print("Página de serviços:", page.url)
-
-    input("Pressione Enter para fechar...")
+if __name__ == "__main__":
+    main()
